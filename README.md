@@ -3,23 +3,14 @@ StalkerDB PHP web MySql Connectors.
 
 show databases;
 +--------------------+
-
 | Database           |
-
 +--------------------+
-
 | followingCars      |
-
 | information_schema |
-
 | mysql              |
-
 | performance_schema |
-
 | sys                |
-
 | testDatabase       |
-
 +--------------------+
 
 
