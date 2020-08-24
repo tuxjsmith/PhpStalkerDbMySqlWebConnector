@@ -5,6 +5,7 @@ show databases;
 +--------------------+
 | Database           |
 +--------------------+
+| docFarm            |
 | followingCars      |
 | information_schema |
 | mysql              |
@@ -12,7 +13,6 @@ show databases;
 | sys                |
 | testDatabase       |
 +--------------------+
-
 
 use followingCars;
 show tables;
