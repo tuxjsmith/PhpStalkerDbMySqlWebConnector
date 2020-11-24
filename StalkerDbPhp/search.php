@@ -28,4 +28,4 @@
 
     include 'Database.php';
     
-    dbConnect_search();
+    dbConnect_search ();

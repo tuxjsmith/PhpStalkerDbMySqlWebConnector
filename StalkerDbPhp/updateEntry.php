@@ -28,4 +28,4 @@
 
     include 'Database.php';
     
-    dbConnect_update();
+    dbConnect_update ();

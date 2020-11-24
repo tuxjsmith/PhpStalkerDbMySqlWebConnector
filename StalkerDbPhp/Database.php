@@ -27,6 +27,11 @@
  */
 
 /*
+ * TODO: Initialise all variables at the top of functions.
+ * TODO: I find things too confusing otherwise.
+ */
+
+/*
  * Adds a 'connection' key to the built in associate array $GLOBALS
  */
 global $connection;
@@ -34,127 +39,197 @@ global $connection;
 /*
  * Make a connection to the database.
  */
-function dbConnect () {
+//<editor-fold defaultstate="collapsed" desc="dbConnect">
+function dbConnect() {
 
-    $GLOBALS['connection'] = new mysqli("localhost", "testUser", "foobar", "followingCars");
+    $GLOBALS['connection'] = new mysqli( "localhost", "testUser", "foobar", "followingCars" );
 
-    if ($GLOBALS['connection']->connect_errno) {
+    if ( $GLOBALS[ 'connection' ] -> connect_errno ) {
 
         echo "[1] Failed to connect to MySQL: (" . $GLOBALS['connection']->connect_errno . ") " . $GLOBALS['connection']->connect_error;
-    
+
         echo PHP_EOL;
-        
+
         exit;
     }
-    
-    if (!$GLOBALS['connection']->set_charset('utf8')) {
-    
-        echo "Error loading character set utf8: %s\n", $GLOBALS['connection']->error;
-        
+
+    if ( !$GLOBALS['connection'] -> set_charset( 'utf8' ) ) {
+
+        echo "Error loading character set utf8: %s\n", $GLOBALS[ 'connection' ] -> error;
+
         echo PHP_EOL;
-        
+
         exit;
     }
 }
+//</editor-fold>
 
-/*
- * 
- */
-function dbConnect_setDeleted() {
+//<editor-fold defaultstate="collapsed" desc="dbConnect_setDeleted">
+function dbConnect_setDeleted () {
 
     dbConnect ();
 
-    $id = mysqli_real_escape_string($GLOBALS['connection'], $_POST["id"]);
+    $id = mysqli_real_escape_string ( $GLOBALS[ 'connection' ], filter_input ( INPUT_POST, 'id' ) );
 
-    $GLOBALS['connection']->query(
-            "update data " .
-            "set deleted = 1 " .
-            "where id = " . $id);
+    $GLOBALS[ 'connection' ] -> query (
+            "update data set deleted = 1 where id = " . $id );
 
-    deletedFeedback ();    
-    
-    $GLOBALS['connection']->close();
+    deletedFeedback ();
+
+    $GLOBALS [ 'connection' ] -> close ();
 }
+//</editor-fold>
 
-function dbConnect_update() {
+//<editor-fold defaultstate="collapsed" desc="dbConnect_update">
+function dbConnect_update () {
 
-    dbConnect();
+    dbConnect ();
 
     /*
      * URL received parameters.
      * 
      * Variables: $reg, $make, etc
      * are retrieved from the URL post ($_POST) values.
-     */
-    $reg = mysqli_real_escape_string($GLOBALS['connection'], $_POST["reg"]);
-    $make = mysqli_real_escape_string($GLOBALS['connection'], $_POST["make"]);
-    $date = mysqli_real_escape_string($GLOBALS['connection'], $_POST["date"]);        
-    $location = mysqli_real_escape_string($GLOBALS['connection'], $_POST["location"]);            
-    $fileName = mysqli_real_escape_string($GLOBALS['connection'], $_POST["fileName"]);       
-    $notes = mysqli_real_escape_string($GLOBALS['connection'], $_POST["notes"]);
-    $id = mysqli_real_escape_string($GLOBALS['connection'], $_POST["id"]);
-    $crimeStoppers = mysqli_real_escape_string($GLOBALS['connection'], $_POST["crimeStoppers"]);
-    $imageMime = mysqli_real_escape_string($GLOBALS['connection'], $_POST["imageMime"]);
-    
+     */   
+    $reg = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'reg' ) );
+    $make = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'make' ) );
+    $date = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'date' ) );
+    $location = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'location' ) );
+    $fileName = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'fileName' ) );
+    $notes = mysqli_real_escape_string ($GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'notes' ) );
+    $id = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'id' ) );
+    $crimeStoppers = mysqli_real_escape_string ($GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'crimeStoppers' ) );
+    $imageMime = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'imageMime' ) );
+    $type = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'vehicleType' ) );
+
     /*
-     * A mechanism for adding CrimeStopper data.
+     * dbConnect_update (edit & save)
      * 
-     * - Get a count of matching CrimeStopper registrations.
+     * CrimeStoppers insert
+     * table: crimeStoppers.
      */
-    $crimeStoppersResult = $GLOBALS['connection']->query(
-            "select count(*) from crimeStoppers where reg = '" . $_POST["reg"] . "'"
-            );
-    
+    //<editor-fold defaultstate="collapsed" desc="dbConnect_update :: crimeStoppers">
+    $cs_result = $GLOBALS [ 'connection' ] -> query (
+            "select count(*) from crimeStoppers where reg = '" . filter_input ( INPUT_POST, 'reg' ) . "'" );
+
     $regCounter = 0;
-    
-    if ($crimeStoppersResult) {
 
-        while ($row = $crimeStoppersResult->fetch_assoc()) {
+    if ( $cs_result ) {
 
-            $regCounter = $row['count(*)'];
+        while ( $row = $cs_result -> fetch_assoc () ) {
+
+            $regCounter = $row [ 'count(*)' ];
         }
-        
-        $crimeStoppersResult->close();
+
+        $cs_result -> close ();
     }
-    
+
     /*
      * If no entries match the reg' in crimeStoppers table then insert a new record.
      */
-    if ($regCounter == 0) {
-    
-        $GLOBALS['connection']->query(
-                "insert into crimeStoppers (reg, reported) "
-                . "values ('" . $reg . "', " . $crimeStoppers . ")");
+    if ( $regCounter == 0 ) {
+
+        $GLOBALS [ 'connection' ] -> query (
+                "insert into crimeStoppers (reg, reported) values ('" . $reg . "', " . $crimeStoppers . ")" );
     }
     /*
      * If count is > 0 then update the record that matches the reg'.
-     */
+     */ 
     else {
-        
-        $GLOBALS['connection']->query(
-            "update crimeStoppers set " .
-            "reported = " . $crimeStoppers .
-                " where reg = '" . $reg . "'");
+
+        $GLOBALS [ 'connection' ] -> query (
+                "update crimeStoppers set reported = " . $crimeStoppers . " where reg = '" . $reg . "'" );
     }
+    //</editor-fold>
     
     /*
-     * We are in the update area but we add a new image, not update an existing one.
+     * dbConnect_update (edit & save)
+     * 
+     * Vehicle make insert
+     * table: vehicleMake.
      */
-    if ($imageMime 
-        && $imageMime != "no image") {
-        
-        $GLOBALS['connection']->query(
-            "insert into images (mimeText, dataReg) "
-                . "values ('" . $imageMime . "', '" . $reg . "')");
-        
+    //<editor-fold defaultstate="collapsed" desc="dbConnect_update :: vehicleMake">
+    $vm_result = $GLOBALS [ 'connection' ] -> query (
+            "select count(*) from vehicleMake where reg = '" . $reg . "'" );
+
+    $vm_counter = 0;
+
+    if ( $vm_result ) {
+
+        while ( $vm_row = $vm_result -> fetch_assoc () ) {
+
+            $vm_counter = $vm_row [ 'count(*)' ];
+        }
+
+        $vm_result -> close ();
+
+        if ( $vm_counter == 0 ) {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "insert into vehicleMake (reg, make) values ('" . $reg . "', '" . $make . "')" );
+        } else {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "update vehicleMake set make = '" . $make . "' where reg = '" . $reg . "'" );
+        }
     }
+    //</editor-fold>
     
     /*
-     * Update (db table) data.
+     * dbConnect_update (edit & save)
+     * 
+     * Vehicle type insert
+     * table: vehicleType.
      */
-    if ($id) {
-        
-        $GLOBALS['connection']->query(
+    //<editor-fold defaultstate="collapsed" desc="dbConnect_update :: vehicleMake">
+    $vt_result = $GLOBALS [ 'connection' ] -> query (
+            "select count(*) from vehicleType where reg = '" . $reg . "'" );
+
+    $vt_counter = 0;
+
+    if ( $vt_result ) {
+
+        while ( $vt_row = $vt_result -> fetch_assoc () ) {
+
+            $vt_counter = $vt_row [ 'count(*)' ];
+        }
+
+        $vt_result -> close ();
+
+        if ( $vt_counter == 0 ) {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "insert into vehicleType (reg, type) values ('" . $reg . "', '" . $type . "')" );
+        } else {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "update vehicleType set type = '" . $type . "' where reg = '" . $reg . "'" );
+        }
+    }
+    //</editor-fold>
+
+    /*
+     * dbConnect_update (edit & save)
+     * 
+     * We are in the update area but we add/insert a new image, not update an existing one.
+     */
+    //<editor-fold defaultstate="collapsed" desc="dbConnect_update :: images">
+    if ( $imageMime && $imageMime != "no image" ) {
+
+        $GLOBALS [ 'connection' ] -> query (
+                "insert into images (mimeText, dataReg) values ('" . $imageMime . "', '" . $reg . "')" );
+    }
+    //</editor-fold>
+    
+    /*
+     * dbConnect_update (edit & save)
+     * 
+     * table: data.
+     */
+    //<editor-fold defaultstate="collapsed" desc="dbConnect_update :: data">
+    if ( $id ) {
+
+        $GLOBALS [ 'connection' ] -> query (
                 "update data set " .
                 "reg = '" . $reg . "', " .
                 "date = '" . $date . "', " .
@@ -162,50 +237,54 @@ function dbConnect_update() {
                 "make = '" . $make . "', " .
                 "notes = '" . $notes . "', " .
                 "location = '" . $location . "' " .
-                "where id = " . $id);
+                "where id = " . $id );
     }
-    
+    //</editor-fold>
+
     /*
      * Display GUI feedback info'.
      */
     saveFeedback();
-    
+
     /*
      * Close the connection.
      */
-    $GLOBALS['connection']->close();
+    $GLOBALS [ 'connection' ] -> close ();
 }
+//</editor-fold>
 
-function dbConnect_get_images() {
+//<editor-fold defaultstate="collapsed" desc="dbConnect_get_images">
+function dbConnect_get_images () {
 
     dbConnect();
 
-    if ($_POST["reg"]) {
+    if ( filter_input(INPUT_POST, 'reg' ) ) {
 
-        $reg = mysqli_real_escape_string($GLOBALS['connection'], $_POST["reg"]);
+        $reg = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'reg' ) );
 
-        $imagesResults = $GLOBALS['connection']->query("select mimeText from images where dataReg = '" . $reg . "'");
+        $imagesResults = $GLOBALS [ 'connection' ] -> query ( "select mimeText from images where dataReg = '" . $reg . "'" );
 
-        if ($imagesResults) {
+        if ( $imagesResults ) {
 
             $imagesCounter = 0;
 
-            while ($row = $imagesResults->fetch_assoc()) {
+            while ( $row = $imagesResults -> fetch_assoc () ) {
 
-                $images[$imagesCounter] = $row['mimeText'];
-                
+                $images [ $imagesCounter ] = $row [ 'mimeText' ];
+
                 $imagesCounter++;
             }
 
-            $imagesResults->close();
+            $imagesResults -> close ();
         }
 
-        foreach ($images as $i) {
+        foreach ( $images as $i ) {
 
             echo $i . PHP_EOL;
         }
     }
 }
+//</editor-fold>
 
 /*
  * Explanation:
@@ -215,62 +294,75 @@ function dbConnect_get_images() {
  * why we have repeated the same crimeStoppers query in some of the if 
  * statements (not all). 
  */
-function dbConnect_search () {
 
-    dbConnect();
+//<editor-fold defaultstate="collapsed" desc="dbConnect_search">
+function dbConnect_search() {
+
+    dbConnect ();
+
+    $vmView = "vmView_" . rand ( 10,100000 );
+    $vtView = "vtView_" . rand ( 10,100000 );
     
-    $commonCrimeStopperStatement = "SELECT * from crimeStoppers where reported = 0";
-        
-    if ($_POST["reg"]) {
+    $dataView = "dView_" . rand( 10,100000 );
+    $GLOBALS [ 'connection' ] -> query ( "create view " . $dataView . " as select * from data where deleted = 0" );
     
-        $reg = mysqli_real_escape_string($GLOBALS['connection'], $_POST["reg"]);
+    $cs_searchResults = $GLOBALS [ 'connection' ] -> query ( "SELECT * from crimeStoppers where reported = 0" );
+
+    if ( filter_input ( INPUT_POST, 'reg' ) ) {
+
+        $reg = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'reg' ) );
         
-        $searchResults = $GLOBALS['connection']->query("SELECT * from data where reg like '%". $reg . "%' and deleted = 0");
-        
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "SELECT * from " . $dataView . " where reg like '%" . $reg . "%' and deleted = 0" );
     }
-    else if ($_POST["make"]) {
     
-        $make = mysqli_real_escape_string($GLOBALS['connection'], $_POST["make"]);
+    else if ( filter_input ( INPUT_POST, 'make' ) ) {
         
-        $searchResults = $GLOBALS['connection']->query("SELECT * from data where make like '%". $make . "%' and deleted = 0");
+        $make = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input( INPUT_POST, 'make' ) );
         
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
+        $GLOBALS [ 'connection' ] -> query ( "create view " . $vmView . " as select reg, make from vehicleMake where make like '%" . $make . "%'" );
+        
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "select " . $dataView . ".* from " . $dataView . " inner join " . $vmView . " on " . $dataView . ".reg=" . $vmView . ".reg" );
+    } 
+    
+    else if ( filter_input(INPUT_POST, 'vehicleType' ) ) {
+        
+        $type = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'vehicleType' ) );
+        
+        $GLOBALS [ 'connection' ] -> query ( "create view " . $vtView . " as select reg, type from vehicleType where type like '%" . $type . "%'" );
+        
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "select " . $dataView . ".* from " . $dataView . " inner join " . $vtView . " on " . $dataView . ".reg=" . $vtView . ".reg" );
     }
-    else if ($_POST["date"]) {
-        
-        $date = mysqli_real_escape_string($GLOBALS['connection'], $_POST["date"]); 
     
-        $searchResults = $GLOBALS['connection']->query("SELECT * from data where date like '%". $date . "%' and deleted = 0");
-        
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
+    else if ( filter_input ( INPUT_POST, 'date' ) ) { 
+
+        $date = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'date' ) );
+
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "SELECT * from data where date like '%" . $date . "%' and deleted = 0" );
     }
-    else if ($_POST["fileName"]) {
     
-        $fileName = mysqli_real_escape_string($GLOBALS['connection'], $_POST["fileName"]);
+    else if ( filter_input ( INPUT_POST, 'fileName' ) ) { 
         
-        $searchResults = $GLOBALS['connection']->query("SELECT * from data where fileName like '%". $fileName . "%' and deleted = 0");
-        
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
-    }
-    else if ($_POST["notes"]) {
-        
-        $notes = mysqli_real_escape_string($GLOBALS['connection'], $_POST["notes"]);  
+        $fileName = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'fileName' ) );
+
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "SELECT * from data where fileName like '%" . $fileName . "%' and deleted = 0" );
+    } 
     
-        $searchResults = $GLOBALS['connection']->query("SELECT * from data where notes like '%". $notes . "%' and deleted = 0");
-        
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
-    }
-    else if ($_POST["location"]) {
+    else if ( filter_input ( INPUT_POST, 'notes' ) ) {  
+
+        $notes = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'notes' ) );
+
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "SELECT * from data where notes like '%" . $notes . "%' and deleted = 0" );
+    } 
     
-        $location = mysqli_real_escape_string($GLOBALS['connection'], $_POST["location"]);  
-        
-        $searchResults = $GLOBALS['connection']->query("SELECT * from data where location like '%" . $location . "%' and deleted = 0");
-        
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
-    }
-    else if ($_POST["crimeStoppers"]) {
+    else if ( filter_input ( INPUT_POST, 'location' ) ) {  
+
+        $location = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'location' ) );
+
+        $searchResults = $GLOBALS [ 'connection' ] -> query ( "SELECT * from data where location like '%" . $location . "%' and deleted = 0" );
+    } 
     
+    else if ( filter_input ( INPUT_POST, 'crimeStoppers' ) ) {  
+
         /*
          * Easiest way of achieving the required ResultSets for the statements
          * below. I realise that in this case both results will be the same.
@@ -282,33 +374,37 @@ function dbConnect_search () {
          * 
          * but it's less typing/maintenance to write this comment.
          */
-        $searchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
+//        $searchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
         
-        $crimeStoppersSearchResults = $GLOBALS['connection']->query($commonCrimeStopperStatement);
-    }
+        $searchResults = $cs_searchResults;
+    } 
     else {
-        
-        echo "No search criteria!\n";
-    }
-    
-    if ($crimeStoppersSearchResults) {
-        
-        $crimeStoppersCounter = 0;
-        
-        while ($row = $crimeStoppersSearchResults->fetch_assoc()) {
-            
-            $crimeStoppers[$crimeStoppersCounter] = $row['reg'];
-            
-            $crimeStoppersCounter++;
-        }
-    }
-    
-    $crimeStoppersSearchResults->close ();
 
-    if ($searchResults) {
+        echo "No search criteria!" . PHP_EOL;
+    }
+
+    /*
+     * TODO: this set of instructions could be a separate function.
+     * function foo return an array
+     */
+    if ( $cs_searchResults ) {
+
+        $cs_counter = 0;
+
+        while ( $row = $cs_searchResults -> fetch_assoc () ) {
+
+            $crimeStoppers [ $cs_counter ] = $row [ 'reg' ];
+
+            $cs_counter++;
+        }
+        
+        $cs_searchResults -> close ();
+    }
+
+    if ( $searchResults ) {
 
         $counter = 0;
-        
+
         /*
          * We create an array of result strings and then loop through the array,
          * echoing them out.
@@ -317,33 +413,62 @@ function dbConnect_search () {
          */
         while ($row = $searchResults->fetch_assoc()) {
 
+            $typeResult = $GLOBALS [ 'connection' ] -> query ( "select type from vehicleType where reg = '" . $row [ 'reg' ] . "' limit 1" );
+
+            if ( $typeResult ) {
+
+                while ( $typeRow = $typeResult -> fetch_assoc () ) {
+
+                    $theType = $typeRow [ 'type' ];
+                }
+
+                $typeResult -> close ();
+            }
+              
+            $makeResult = $GLOBALS [ 'connection' ] -> query ( "select make from vehicleMake where reg = '" . $row [ 'reg' ] . "' limit 1" );
+
+            if ( $makeResult ) {
+
+                while ( $makeRow = $makeResult -> fetch_assoc () ) {
+
+                    $theMake = $makeRow [ 'make' ];
+                }
+
+                $makeResult -> close ();
+            }
+            
             /*
              * A string that represents a single row of result data.
              */
-            $resultString = "id:" . ( array_key_exists("id", $row) ? $row['id'] : "-1") . ":~:"
-                        . "reg:"  . $row['reg'] . ":~:"
-                        . "date:" . ( array_key_exists("date", $row) ? $row['date'] : "foo") . ":~:"
-                        . "fileName:" . ( array_key_exists("fileName", $row) ? $row['fileName'] : "None") . ":~:"
-                        . "make:" . ( array_key_exists("make", $row) ? $row['make'] : "Dunno") . ":~:"
-                        . "notes:" . ( array_key_exists("notes", $row) ? $row['notes'] : "Crime Stoppers" ) . ":~:"
-                        . "location:" . ( array_key_exists("location", $row) ? $row['location'] : "Dunno" ) . ":~:"
-                        . "crimeStoppers:" . ( in_array($row['reg'], $crimeStoppers) ? "0" : "1" ); 
+            $resultString = "id:" . ( array_key_exists ( "id", $row ) ? $row [ 'id' ] : "-1" ) . ":~:"
+                    . "reg:" . $row [ 'reg' ] . ":~:"
+                    . "date:" . ( array_key_exists ( "date", $row ) ? $row [ 'date' ] : "foo" ) . ":~:"
+                    . "fileName:" . ( array_key_exists ( "fileName", $row ) ? $row [ 'fileName' ] : "None" ) . ":~:"
+                    . "make:" . ( ( $theMake ) ? $theMake : "Dunno" ) . ":~:"
+                    . "notes:" . ( array_key_exists ( "notes", $row ) ? $row [ 'notes' ] : "Crime Stoppers" ) . ":~:"
+                    . "location:" . ( array_key_exists ( "location", $row ) ? $row [ 'location' ] : "Dunno" ) . ":~:"
+                    . "type:" . ( ( $theType ) ? $theType : "Dunno" ) . ":~:"
+                    . "crimeStoppers:" . ( in_array ( $row [ 'reg' ], $crimeStoppers ) ? "0" : "1" );
             
             /*
              * We add that string to an array.
              */
-            $allResultStrings[$counter] = $resultString;
-                     
+            $allResultStrings [ $counter ] = $resultString;
+
             /*
              * Increment the array counter.
              */
             $counter++;
         }
-        
+
         /*
          * Close the result set.
          */
-        $searchResults->close();
+        $searchResults -> close ();
+            
+        $GLOBALS [ 'connection' ] -> query ( "drop view " . $vmView );
+        $GLOBALS [ 'connection' ] -> query ( "drop view " . $vtView );
+        $GLOBALS [ 'connection' ] -> query ( "drop view " . $dataView );
         
         /*
          * echo all of the result strings.
@@ -351,266 +476,355 @@ function dbConnect_search () {
          * Because the results are now held in an array, we could do additional 
          * things with them.
          */
-        foreach ($allResultStrings as $x) {
-            
+        foreach ( $allResultStrings as $x ) {
+
             echo $x . PHP_EOL;
         }
+    } else {
+
+        echo "Search error " . PHP_EOL;
     }
-    else {
-        
-        echo "Search error ";
-    }
-    
-    $GLOBALS['connection']->close ();
+
+    $GLOBALS [ 'connection' ] -> close ();
 }
+//</editor-fold>
 
-function dbConnect_addNewEntry() {
+//<editor-fold defaultstate="collapsed" desc="dbConnect_addNewEntry">
+function dbConnect_addNewEntry () {
 
-    dbConnect();
-    
+    dbConnect ();
+
     /*
      * Seems we only get a return value if the query was successful.
      * For examples replace field1 with field2 and no value is returned.               
      */
-    
+
     /*
      * Values received from the URL.
      */
-    $reg = mysqli_real_escape_string($GLOBALS['connection'], $_POST["reg"]);
-    $make = mysqli_real_escape_string($GLOBALS['connection'], $_POST["make"]);
-    $date = mysqli_real_escape_string($GLOBALS['connection'], $_POST["date"]);        
-    $location = mysqli_real_escape_string($GLOBALS['connection'], $_POST["location"]);            
-    $fileName = mysqli_real_escape_string($GLOBALS['connection'], $_POST["fileName"]);       
-    $notes = mysqli_real_escape_string($GLOBALS['connection'], $_POST["notes"]);
-    $crimeStoppers = mysqli_real_escape_string($GLOBALS['connection'], $_POST["crimeStoppers"]);
-    $imageMime = mysqli_real_escape_string($GLOBALS['connection'], $_POST["imageMime"]);
+    //<editor-fold defaultstate="collapsed" desc="values from URL">
+    $reg = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'reg' ) );
+    $make = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'make' ) );
+    $date = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'date' ) );
+    $location = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'location' ) );
+    $fileName = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'fileName' ) );
+    $notes = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'notes' ) );
+    $crimeStoppers = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'crimeStoppers' ) );
+    $imageMime = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'imageMime' ) );
+    $vehicleType = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'vehicleType' ) );
+    //</editor-fold>
     /*
      * End values received.
      */
+
+    /*
+     * crimeStoppers insert 
+     * table: crimeStoppers
+     * 
+     * Get the number of crimeStopper entries that match the reg.
+     */
+    //<editor-fold defaultstate="collapsed" desc="crimeStoppers results">
+    $cs_result = $GLOBALS [ 'connection' ] -> query (
+            "select count(*) from crimeStoppers where reg = '" . $reg . "'" );
+
+    $cs_counter = 0;
+
+    if ( $cs_result ) {
+
+        while ( $cs_row = $cs_result -> fetch_assoc () ) {
+
+            $cs_counter = $cs_row [ 'count(*)' ];
+        }
+
+        $cs_result -> close ();
+    }
+    //</editor-fold>
     
     /*
-     * crimeStoppers insert (table is called: crimeStoppers).
+     * Registration was not found in crimeStoppers table
+     * so insert it.
      */
-    $result_1 = $GLOBALS['connection']->query("select count(*) from crimeStoppers where reg = '" . $reg . "'");
-    
-    $regCounter = 0;
-    
-    if ($result_1) {
+    //<editor-fold defaultstate="collapsed" desc="insert into crimeStoppers">
+    if ( $cs_counter == 0 ) {
 
-        while ($row = $result_1->fetch_assoc()) {
-
-            $regCounter = $row['count(*)'];
-        }
-        
-        $result_1->close();
-    }
-    
-    if ($regCounter == 0) {
-    
-        $GLOBALS['connection']->query("insert into crimeStoppers (reg, reported) values ("
-                . "'" . $reg . "', " 
-                . $crimeStoppers . ")");
-    }
+        $GLOBALS [ 'connection' ] -> query (
+                "insert into crimeStoppers (reg, reported) values ('" . $reg . "', " . $crimeStoppers . ")" );
+    } 
+    /*
+     * Registration was found in crimeStoppers table
+     * so update.
+     */
     else {
-        
-        $GLOBALS['connection']->query(
-            "update crimeStoppers set " .
-            "reported = " . $crimeStoppers .
-                " where reg = '" . $reg . "'");
+
+        $GLOBALS [ 'connection' ] -> query (
+                "update crimeStoppers set reported = " . $crimeStoppers . " where reg = '" . $reg . "'" );
     }
+    //</editor-fold>
     /*
      * End crimeStoppers insert.
      */
+
+    /*
+     * Vehicle Type.
+     */
+    //<editor-fold defaultstate="collapsed" desc="vehicleType results">
+    $vt_result = $GLOBALS [ 'connection' ] -> query (
+            "select count(*) from vehicleType where reg = '" . $reg . "'" );
     
+    $vt_counter = 0;
+    
+    if ( $vt_result ) {
+
+        while ( $vt_row = $vt_result -> fetch_assoc () ) {
+
+            $vt_counter = $vt_row [ 'count(*)' ];
+        }
+
+        $vt_result -> close ();
+
+        if ($vt_counter == 0) {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "insert into vehicleType (reg, type) values ('" . $reg . "', '" . $vehicleType . "')" );
+        } else {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "update vehicleType set type = '" . $vehicleType . "' where reg = '" . $reg . "'" );
+        }
+    }
+    //</editor-fold>
+    /*
+     * End vehicleType
+     */
+    
+    /*
+     * Vehicle make insert
+     * table: vehicleMake.
+     */
+    //<editor-fold defaultstate="collapsed" desc="vehicleMake results">
+    $vm_result = $GLOBALS [ 'connection' ] -> query (
+            "select count(*) from vehicleMake where reg = '" . $reg . "'" );
+
+    $vm_counter = 0;
+
+    if ( $vm_result ) {
+
+        while ( $vm_row = $vm_result -> fetch_assoc () ) {
+
+            $vm_counter = $vm_row [ 'count(*)' ];
+        }
+
+        $vm_result -> close ();
+ 
+        if ( $vm_counter == 0 ) {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "insert into vehicleMake (reg, make) values ('" . $reg . "', '" . $make . "')" );
+        } else {
+
+            $GLOBALS [ 'connection' ] -> query (
+                    "update vehicleMake set make = '" . $make . "' where reg = '" . $reg . "'" );
+        }
+    }
+    //</editor-fold>
+    /*
+     * End vehicleMake insert.
+     */
+
     /*
      * Add a new image.
      */
-    if ($imageMime 
-        && $imageMime != "no image") {
-        
-        $GLOBALS['connection']->query(
-            "insert into images (mimeText, dataReg) "
-                . "values ('" . $imageMime . "', '" . $reg . "')");
-        
+    //<editor-fold defaultstate="collapsed" desc="insert into images">
+    if ( $imageMime 
+            && $imageMime != "no image" ) {
+
+        $GLOBALS [ 'connection' ] -> query (
+                "insert into images (mimeText, dataReg) values ('" . $imageMime . "', '" . $reg . "')" );
     }
-    
+    //</editor-fold>
+
     /*
      * data insert (table is called: data).
      */
-    $GLOBALS['connection']->query("insert into data(reg, make, date, location, fileName, notes) values ("
-            . "'" . $reg ."', "
+    //<editor-fold defaultstate="collapsed" desc="insert into data">
+    $GLOBALS [ 'connection' ] -> query (
+            "insert into data(reg, make, date, location, fileName, notes) values ("
+            . "'" . $reg . "', "
             . "'" . $make . "', "
             . "'" . $date . "', "
             . "'" . $location . "', "
             . "'" . $fileName . "', "
-            . "'" . $notes . "')");
-     
-    saveFeedback();
-    
-    $GLOBALS['connection']->close ();
-}
+            . "'" . $notes . "')" );
+    //</editor-fold>
 
+    saveFeedback ();
+
+    $GLOBALS [ 'connection' ] -> close ();
+}
+//</editor-fold>
+
+//<editor-fold defaultstate="collapsed" desc="deletedFeedback">
 function deletedFeedback () {
-    
+
     /*
      * We just deleted this id by setting its deleted value to: 0.
      */
-    if ($_POST["id"]) {
-    
-        echo "id:" . ($_POST["id"]) . PHP_EOL;
+    if ( filter_input ( INPUT_POST, 'id' ) ) {
+
+        echo "id:" . ( filter_input ( INPUT_POST, 'id' ) ) . PHP_EOL;
     }
-    
+
     /*
      * Get count of entries not deleted.
      */
-    $result = $GLOBALS['connection']->query("SELECT count(*) from data where deleted = 0");
+    $result = $GLOBALS [ 'connection' ] -> query ( "SELECT count(*) from data where deleted = 0" );
 
-    if ($result) {
+    if ( $result ) {
 
-        while ($row = $result->fetch_assoc()) {
+        while ( $row = $result -> fetch_assoc () ) {
 
-            echo "count:" . $row['count(*)'] . PHP_EOL;
+            echo "count:" . $row [ 'count(*)' ] . PHP_EOL;
         }
-        
-        $result->close();
+
+        $result -> close ();
     }
     /*
      * End of count.
      */
 }
+//</editor-fold>
 
 /*
  * Gui feedback
  */
+
+//<editor-fold defaultstate="collapsed" desc="saveFeedback">
 function saveFeedback () {
-    
+
     /*
      * We just edited and updated an entry.
      */
-    if ($_POST["id"]) {
-    
-        echo "id:" . ($_POST["id"])  . PHP_EOL;
+    if ( filter_input ( INPUT_POST, 'id' ) ) {
+
+        echo "id:" . ( filter_input ( INPUT_POST, 'id' ) ) . PHP_EOL;
     }
     /*
      * New entry / insert.
-     */
-    else {
-        
-        echo "id:" . $GLOBALS['connection']->insert_id . PHP_EOL;
+     */ else {
+
+        echo "id:" . $GLOBALS [ 'connection' ] -> insert_id . PHP_EOL;
     }
-    
+
     /*
      * Get number of entries with this registrations.
      */
-    $result = $GLOBALS['connection']->query(
-            "SELECT count(*) from data where reg = '" . $_POST["reg"] . "' and deleted = 0"
-            );
+    $result = $GLOBALS [ 'connection' ] -> query (
+            "SELECT count(*) from data where reg = '" . filter_input ( INPUT_POST, 'reg' ) . "' and deleted = 0" );
 
-    if ($result) {
+    if ( $result ) {
 
-        while ($row = $result->fetch_assoc()) {
+        while ( $row = $result -> fetch_assoc () ) {
 
-            echo "duplicates:" . $row['count(*)'] . PHP_EOL;
+            echo "duplicates:" . $row [ 'count(*)' ] . PHP_EOL;
         }
-        
-        $result->close();
+
+        $result -> close ();
     }
     /*
      * End get number of duplicate registrations.
      */
-    
+
     /*
      * Get total number of entries that are not marked as deleted.
      */
-    $result2 = $GLOBALS['connection']->query("SELECT count(*) from data where deleted = 0");
+    $result2 = $GLOBALS [ 'connection' ] -> query ( "SELECT count(*) from data where deleted = 0" );
 
-    if ($result2) {
+    if ( $result2 ) {
 
-        while ($row = $result2->fetch_assoc()) {
+        while ( $row = $result2 -> fetch_assoc () ) {
 
-            echo "count:" . $row['count(*)'] . PHP_EOL; 
+            echo "count:" . $row [ 'count(*)' ] . PHP_EOL;
         }
-        
-        $result2->close();
+
+        $result2 -> close ();
     }
     /*
      * End total number of entries.
      */
 }
+//</editor-fold>
 
+//<editor-fold defaultstate="collapsed" desc="dbConnect_updateGlobalNotes">
 function dbConnect_updateGlobalNotes () {
-    
-    dbConnect();
-    
-    $notes = mysqli_real_escape_string($GLOBALS['connection'], $_POST["notes"]);
-    
-    $notesResult = $GLOBALS['connection']->query("select count(*) from globalNotes");
-    
+
+    dbConnect ();
+
+    $notes = mysqli_real_escape_string ( $GLOBALS [ 'connection' ], filter_input ( INPUT_POST, 'notes' ) );
+
+    $notesResult = $GLOBALS [ 'connection' ] -> query ( "select count(*) from globalNotes" );
+
     $notesCount = 0;
-    
-    if ($notesResult) {
 
-        while ($row = $notesResult->fetch_assoc()) {
+    if ( $notesResult ) {
 
-            $notesCount = $row['count(*)'];
+        while ( $row = $notesResult -> fetch_assoc () ) {
+
+            $notesCount = $row [ 'count(*)' ];
         }
-        
-        $notesResult->close();
+
+        $notesResult -> close ();
     }
-    
-    if ($notesCount == 0) {
-    
-        $GLOBALS['connection']->query(
-                "insert into globalNotes (notes) "
-                . "values ('" . $notes . "')");
-    }
-    else {
-        
-        $GLOBALS['connection']->query(
-            "update globalNotes set " .
-            "notes = '" . $notes . "'");
-    }
-    
-    $GLOBALS['connection']->close ();
+
+    if ( $notesCount == 0 ) {
+
+        $GLOBALS [ 'connection' ] -> query ( "insert into globalNotes (notes) values ('" . $notes . "')" );
+    } else {
+
+        $GLOBALS [ 'connection' ] -> query ( "update globalNotes set notes = '" . $notes . "'" );
+    }                        
+
+    $GLOBALS [ 'connection' ] -> close ();
 }
+//</editor-fold>                                
 
-function dbConnect_getGlobalNotes () {
-    
+//<editor-fold defaultstate="collapsed" desc="dbConnect_getGlobalNotes">
+function dbConnect_getGlobalNotes() {
+
     dbConnect();
-    
-    $notesResult = $GLOBALS['connection']->query("select count(*) from globalNotes");
-    
+
+    $notesResult = $GLOBALS [ 'connection' ] -> query ( "select count(*) from globalNotes" );
+
     $notesCount = 0;
-    
-    if ($notesResult) {
 
-        while ($row = $notesResult->fetch_assoc()) {
+    if ( $notesResult ) {
 
-            $notesCount = $row['count(*)'];
+        while ( $row = $notesResult -> fetch_assoc () ) {
+
+            $notesCount = $row [ 'count(*)' ];
         }
-        
-        $notesResult->close();
+
+        $notesResult -> close ();
     }
-    
-    if ($notesCount == 0) {
-    
+
+    if ( $notesCount == 0 ) {
+
         echo 'empty notes' . PHP_EOL;
-    }
+    } 
     else {
-        
-        $notesResult_2 = $GLOBALS['connection']->query(
-            "select * from globalNotes");
-        
-        while ($row = $notesResult_2->fetch_assoc()) {
 
-            echo $row['notes'] . PHP_EOL;
+        $notesResult_2 = $GLOBALS [ 'connection' ] -> query ( "select * from globalNotes" );
+
+        while ( $row = $notesResult_2 -> fetch_assoc () ) {
+
+            echo $row [ 'notes' ] . PHP_EOL;
         }
-        
-        $notesResult_2->close();
+
+        $notesResult_2 -> close ();
     }
-    
-    $GLOBALS['connection']->close ();
+
+    $GLOBALS [ 'connection' ] -> close ();
 }
+//</editor-fold>
 
 //<editor-fold desc="Stuff for reference." defaultstate="collapsed">
 
