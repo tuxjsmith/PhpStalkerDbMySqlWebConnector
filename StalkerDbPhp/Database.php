@@ -439,7 +439,7 @@ function dbConnect_search() {
             
             /*
              * A string that represents a single row of result data.
-             */
+             */  
             $resultString = "id:" . ( array_key_exists ( "id", $row ) ? $row [ 'id' ] : "-1" ) . ":~:"
                     . "reg:" . $row [ 'reg' ] . ":~:"
                     . "date:" . ( array_key_exists ( "date", $row ) ? $row [ 'date' ] : "foo" ) . ":~:"
